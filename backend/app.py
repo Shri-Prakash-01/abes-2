@@ -6,6 +6,7 @@ from flask_limiter.util import get_remote_address
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 import os
+from flask import Flask, request, jsonify, send_file
 import bcrypt
 import uuid
 import json
@@ -17,8 +18,11 @@ app = Flask(__name__)
 
 # Configuration
 app.config['SECRET_KEY'] = 'your-secret-key-change-in-production'
-app.config['JWT_SECRET_KEY'] = 'jwt-secret-key-change-in-production'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///secure_vault.db'
+app.config['JWT_SECRET_KEY'] = 'jwt-secret-key-change-in-production'# Database configuration for Render (PostgreSQL)
+database_url = os.environ.get('DATABASE_URL', 'sqlite:///secure_vault.db')
+if database_url and database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100MB max file size
@@ -754,10 +758,10 @@ def init_db():
 
 # Initialize database on startup
 init_db()
-
 if __name__ == '__main__':
     print("🚀 Secure Vault Backend Starting...")
     print(f"📁 Upload folder: {app.config['UPLOAD_FOLDER']}")
     print(f"🗄️  Database: {app.config['SQLALCHEMY_DATABASE_URI']}")
     print("=" * 50)
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get('PORT', 5000))  # Render ka PORT use karo
+    app.run(host='0.0.0.0', port=port)  # 0.0.0.0 par listen karo
